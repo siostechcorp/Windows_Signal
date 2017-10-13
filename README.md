@@ -16,6 +16,8 @@ Next schedule a task (https://technet.microsoft.com/en-us/library/cc748993(v=ws.
 The arguments field on the New Action panel should be given the following:
 "<path-to-Windows_Signal-repo>\scripts\Send-Signal.ps1" <Source> <polling interval in minutes>
 Also, the polling interval should match the value used in the "Repeat task every" field in the New Trigger dialog.
-![Create Task Dialog](https://sites.google.com/a/steeleye.com/stc/_/rsrc/1507905561406/programs/nextgen/nextgenhome/r-d/datakeeper-signal/WindowsSignalTask01.png "Create Task")
-![New Trigger Dialog](https://sites.google.com/a/steeleye.com/stc/_/rsrc/1507905805000/programs/nextgen/nextgenhome/r-d/datakeeper-signal/WindowsSignalTask02.png "New Trigger")
-![New Action Dialog](https://sites.google.com/a/steeleye.com/stc/_/rsrc/1507906007484/programs/nextgen/nextgenhome/r-d/datakeeper-signal/WindowsSignalTask03.png "New Action")
+![Create Task Dialog](/../screenshots/screenshots/WindowsSignalTask01.png?raw=true "Create Task")
+
+![New Trigger Dialog](/../screenshots/screenshots/WindowsSignalTask02.png?raw=true "New Trigger")
+
+![New Action Dialog](/../screenshots/screenshots/WindowsSignalTask03.png?raw=true "New Action")
