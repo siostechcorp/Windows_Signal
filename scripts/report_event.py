@@ -30,8 +30,8 @@ from SignaliQ.model.ProviderEventsUpdateMessage import ProviderEventsUpdateMessa
 
 __log__ = logging.getLogger(__name__)
 
-env_id = 180005401
-vm_uuid = ["421be947-4e42-3deb-e0e9-55ef78c3e16a"] # TODO: correlate to (single?) MAC instead of vm uuid
+env_id = 180005401 # CHANGE THIS TO LOCAL iQ ENVIRONMENT ID
+vm_uuid = ["421be947-4e42-3deb-e0e9-55ef78c3e16a"] # CHANGE THIS TO LOCAL VM UUID, must stay a list
 
 def main(args):
     # Setup the client and send the data!
