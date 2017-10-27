@@ -33,6 +33,8 @@ def main(args):
     # Setup the client and send the data!
     client = Client()
     client.connect()
+    
+    __log__.info( "Creating event with time {} and env id of {}".format(args[5], env_id) )
 
     # create message with <Source>, <ID>, and <Message> delimited by the unicode unit separator
     event_desc = args[1] + unichr(31) + args[2] + unichr(31) + args[4]
