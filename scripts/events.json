@@ -1,0 +1,21 @@
+{ 
+    "Application": {
+        "DataKeeperSnapIn": {
+            "ids": [
+                    1,2,3
+            ]
+        },
+        "ExtMirrSvc": {
+            "ids": [
+                1,2,3
+            ]
+        }
+    },
+    "System": {
+        "ExtMirr": {
+            "ids": [
+                16,219,220
+            ]
+        }
+    }
+}
