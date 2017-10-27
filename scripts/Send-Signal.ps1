@@ -1,28 +1,23 @@
 #######################################################################################################################
 # Send-Signal.ps1
 # 
-# Parse System event log for specifc log and source. Can be configured to run on a schedule via Task Scheduler, but
-# this reuires Python27 to be in the PATH environment variable.
+# Parse System event log for specifc log, sources, and ids defined in $eventsJsonFile. Should be configured to run on a 
+# schedule via Task Scheduler. 
+# Requires Python27 to be in the PATH environment variable.
 #
 # Examples:
-#     PS> Send-Signal "System" "ExtMirr" 5
-#     PS> Send-Signal -EventLog "System" -EventSource "ExtMirr" -MinutesPrevious 5
+#     PS> Send-Signal 
+#     PS> Send-Signal -Pyscript ".\report_event.py" -TimeStampFile ".\UniversalTimeStamp.log" -EventsJsonFile ".\events.json" 
 #
 #######################################################################################################################
 
 [CmdletBinding()]
-Param(
-    [Parameter(Mandatory=$True, Position=0)]
-    [string] $EventLog = "System",
-
-    [Parameter(Mandatory=$True, Position=1)]
-    [string] $EventSource = "ExtMirr",
-
-    [Parameter(Mandatory=$False, Position=2)]
-    [int] $MinutesPrevious = 5
+Param(    
+    [String] $pyscript       = ".\report_event.py",
+    [String] $timeStampFile  = ".\UniversalTimeStamp.log",
+    [String] $eventsJsonFile = ".\events.json"
 )
 
-$pyscript = ".\report_event.py"
 $node = $env:COMPUTERNAME
 
 $xMinutesAgo = (Get-Date).Subtract((New-TimeSpan -Minutes $MinutesPrevious))
