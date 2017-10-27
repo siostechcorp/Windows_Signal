@@ -23,11 +23,13 @@ sys.path.insert(0, '{}/../../'.format(curr_path))
 from SignaliQ.client import Client
 from SignaliQ.model.CloudProviderEvent import CloudProviderEvent
 from SignaliQ.model.ProviderEventsUpdateMessage import ProviderEventsUpdateMessage
+from SignaliQ.model.CloudVM import CloudVM
+from SignaliQ.model.NetworkInterface import NetworkInterface
 
 __log__ = logging.getLogger(__name__)
 
 env_id = 180005401 # CHANGE THIS TO LOCAL iQ ENVIRONMENT ID
-vm_uuid = "421be947-4e42-3deb-e0e9-55ef78c3e16a" # CHANGE THIS TO LOCAL VM UUID
+vm_hwid = "00:50:56:9B:7C:76" # CHANGE THIS TO A LOCAL VM MAC ADDRESS, MUST USE ':' NOT '-' FOR NOW
 
 def main(args):
     # Setup the client and send the data!
@@ -46,8 +48,10 @@ def main(args):
             layer = "Compute",
             severity = args[3],
             time = args[5],
-            event_type = "Performance",
-            vm_uuids = [vm_uuid],
+            event_type = "SDK Event",
+            vms = [
+                CloudVM(network_interfaces = [NetworkInterface(hw_address = vm_hwid)])
+            ],
         ),
         CloudProviderEvent(
             description = event_desc,
@@ -55,8 +59,10 @@ def main(args):
             layer = "Network",
             severity = args[3],
             time = args[5],
-            event_type = "Performance",
-            vm_uuids = [vm_uuid],
+            event_type = "SDK Event",
+            vms = [
+                CloudVM(network_interfaces = [NetworkInterface(hw_address = vm_hwid)])
+            ],
         ),
         CloudProviderEvent(
             description = event_desc,
@@ -64,8 +70,10 @@ def main(args):
             layer = "Storage",
             severity = args[3],
             time = args[5],
-            event_type = "Performance",
-            vm_uuids = [vm_uuid],
+            event_type = "SDK Event",
+            vms = [
+                CloudVM(network_interfaces = [NetworkInterface(hw_address = vm_hwid)])
+            ],
         )
     ]
 
