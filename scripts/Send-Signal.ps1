@@ -27,8 +27,7 @@ $node = $env:COMPUTERNAME
 
 $xMinutesAgo = (Get-Date).Subtract((New-TimeSpan -Minutes $MinutesPrevious))
 
-$events = $null
-$events =  Get-EventLog -LogName $EventLog -After $xMinutesAgo -Source $EventSource
+$events = Get-EventLog -LogName $EventLog -After $xMinutesAgo -Source $EventSource
 
 foreach ( $evt in $events ) {
     # only report events from node running this script

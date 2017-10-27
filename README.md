@@ -16,12 +16,13 @@ To create a task in Windows Server first start the Task Scheduler (https://techn
 
 Next schedule a task (https://technet.microsoft.com/en-us/library/cc748993(v=ws.11).aspx) similar to the images below.  
 The arguments field on the New Action panel should be given the following:  
-"<path-to-Windows_Signal-repo>\scripts\Send-Signal.ps1" <Source> <polling interval in minutes>  
+
+"<path-to-Windows_Signal-repo>\scripts\Send-Signal.ps1" <Event Log> <Source> <polling interval in minutes>  
 
 Also, the polling interval should match the value used in the "Repeat task every" field in the New Trigger dialog.  
 
-![Create Task Dialog](/../screenshots/screenshots/WindowsSignalTask01.png?raw=true "Create Task")
+![Create Task Dialog](/../screenshots/WindowsSignalTask01.png?raw=true "Create Task")
 
-![New Trigger Dialog](/../screenshots/screenshots/WindowsSignalTask02.png?raw=true "New Trigger")
+![New Trigger Dialog](/../screenshots/WindowsSignalTask02.png?raw=true "New Trigger")
 
-![New Action Dialog](/../screenshots/screenshots/WindowsSignalTask03.png?raw=true "New Action")
+![New Action Dialog](/../screenshots/WindowsSignalTask03.png?raw=true "New Action")
