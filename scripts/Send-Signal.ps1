@@ -18,12 +18,6 @@ Param(
     [String] $eventsJsonFile = ".\events.json"
 )
 
-$xMinutesAgo = (Get-Date).Subtract((New-TimeSpan -Minutes $MinutesPrevious))
-
-$events = Get-EventLog -LogName $EventLog -After $xMinutesAgo -Source $EventSource
-
-Report-Events -EventCollection $events -Source $EventSource -Node $env:COMPUTERNAME
-
 function Report-Events {
     [CmdletBinding()]
     Param(
@@ -68,4 +62,50 @@ function Report-Events {
             )
         }
     }
+}
+
+### ENTRY POINT #######################################################################################################
+# parse the last epoch time this script succeeded from file as a signed long, then create DateTime object from it 
+$lastUnixTime = [convert]::ToInt64((Get-Content -Path $timeStampFile), 10)
+$lastUniversalDateTime = ([datetime]'1/1/1970').AddSeconds($lastUnixTime)
+
+# parse the current epoch time as a signed long, then create DateTime object from it
+$nowUnixTime = [long] (Get-Date -Date ((Get-Date).ToUniversalTime()) -UFormat %s)
+$nowUniversalDateTime = ([datetime]'1/1/1970').AddSeconds($nowUnixTime)
+
+# parse the events json file into a PSCustomObject hashtable
+$desiredLogs = Get-Content -Raw -Path $eventsJsonFile | ConvertFrom-Json
+
+# parse out the event logs (Application, System, etc) we need to scan containing the events we care about 
+$eventLogs = $desiredLogs | Get-Member | Where-Object -Property "MemberType" -eq "NoteProperty" | foreach { $_.Name }
+
+foreach ($log in $eventLogs) {
+    
+    # parse out the sources that issue the events we care about so that we can query the target log for just those sources    
+    $eventSources = $desiredLogs.$log | Get-Member | Where-Object -Property "MemberType" -eq "NoteProperty" | foreach { $_.Name }
+    
+    foreach ($source in $eventSources) {
+
+        $eventsOfInterest = [System.Collections.ArrayList]@()
+        $events = Get-EventLog -LogName $log -After $lastUniversalDateTime -Before $nowUniversalDateTime -Source $source
+        if($events -ne $Null) {
+
+            # find events with Ids we care about in the current $log and $source
+            foreach ($id in $desiredLogs.$log.$source.Ids) { 
+                $events | Where-Object -Property EventId -eq $id | foreach { 
+                    $eventsOfInterest.Add($_) 
+                } 
+            }
+            
+            Report-Events -EventCollection $eventsOfInterest -Source $source -Node $env:COMPUTERNAME
+
+            # TODO: put timestamp on SUCCESS per log here
+        }
+    }
+}
+
+# overwrite the timestamp file with the time we started running this script, but only if the previous operations succeeded
+# TODO: make this timestamp method work on a per log basis
+if( $? ) {
+    $nowUnixTime > $timeStampFile
 }
