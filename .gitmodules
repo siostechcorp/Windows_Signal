@@ -1,0 +1,3 @@
+[submodule "Signal_iQ"]
+	path = Signal_iQ
+	url = git@github.com:siostechcorp/Signal_iQ.git
