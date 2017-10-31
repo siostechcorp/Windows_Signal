@@ -71,11 +71,11 @@ $lastUnixTime = 18000 # 1/1/1970 UTC time in case the $timeStampFile is missing
 if(Test-Path -Path $timeStampFile) {
     $lastUnixTime = [convert]::ToInt64((Get-Content -Path $timeStampFile), 10)
 }
-$lastUniversalDateTime = ([datetime]'1/1/1970').AddSeconds($lastUnixTime)
+$lastUniversalDateTime = (([datetime]'1/1/1970').AddSeconds($lastUnixTime)).ToLocalTime()
 
 # parse the current epoch time as a signed long, then create DateTime object from it
 $nowUnixTime = [long] (Get-Date -Date ((Get-Date).ToUniversalTime()) -UFormat %s)
-$nowUniversalDateTime = ([datetime]'1/1/1970').AddSeconds($nowUnixTime)
+$nowUniversalDateTime = (([datetime]'1/1/1970').AddSeconds($nowUnixTime)).ToLocalTime()
 
 # parse the events json file into a PSCustomObject hashtable
 if(Test-Path -Path $eventsJsonFile) {
