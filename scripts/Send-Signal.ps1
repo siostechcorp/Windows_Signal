@@ -81,12 +81,17 @@ $nowUniversalDateTime = ([datetime]'1/1/1970').AddSeconds($nowUnixTime)
 if(Test-Path -Path $eventsJsonFile) {
     $desiredLogs = Get-Content -Raw -Path $eventsJsonFile | ConvertFrom-Json
 } else {
-    Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9999 -EntryType Critical -Message "No events file found at $eventsJsonFile." 
+    Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9000 -EntryType Critical -Message "No events file found at $eventsJsonFile." 
     exit 1
 }
 
 # parse out the event logs (Application, System, etc) we need to scan containing the events we care about 
-$eventLogs = $desiredLogs | Get-Member | Where-Object -Property "MemberType" -eq "NoteProperty" | foreach { $_.Name }
+if ($desiredLogs -ne $Null) {
+    $eventLogs = $desiredLogs | Get-Member | Where-Object -Property "MemberType" -eq "NoteProperty" | foreach { $_.Name }
+} else {
+    Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9001 -EntryType Critical -Message "Failed to parse events file found at $eventsJsonFile. Either no events of interest have been configured or the file is corrupt." 
+    exit 1
+}
 
 foreach ($log in $eventLogs) {
     
