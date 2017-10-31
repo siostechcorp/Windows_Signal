@@ -28,7 +28,7 @@ function Report-Events {
 
     foreach ( $evt in $EventCollection ) {
         # only report events from node running this script
-        if ( $evt.MachineName -like "$Node*" ) {
+        if ( $evt.MachineName -like "$Node" ) {
             $evtSeverity = $null
             switch($evt.CategoryNumber) {
                 1 { $evtSeverity = "Info" }
@@ -65,8 +65,12 @@ function Report-Events {
 }
 
 ### ENTRY POINT #######################################################################################################
+$lastUnixTime = 18000 # 1/1/1970 UTC time in case the $timeStampFile is missing
+
 # parse the last epoch time this script succeeded from file as a signed long, then create DateTime object from it 
-$lastUnixTime = [convert]::ToInt64((Get-Content -Path $timeStampFile), 10)
+if(Test-Path -Path $timeStampFile) {
+    $lastUnixTime = [convert]::ToInt64((Get-Content -Path $timeStampFile), 10)
+}
 $lastUniversalDateTime = ([datetime]'1/1/1970').AddSeconds($lastUnixTime)
 
 # parse the current epoch time as a signed long, then create DateTime object from it
@@ -74,7 +78,12 @@ $nowUnixTime = [long] (Get-Date -Date ((Get-Date).ToUniversalTime()) -UFormat %s
 $nowUniversalDateTime = ([datetime]'1/1/1970').AddSeconds($nowUnixTime)
 
 # parse the events json file into a PSCustomObject hashtable
-$desiredLogs = Get-Content -Raw -Path $eventsJsonFile | ConvertFrom-Json
+if(Test-Path -Path $eventsJsonFile) {
+    $desiredLogs = Get-Content -Raw -Path $eventsJsonFile | ConvertFrom-Json
+} else {
+    Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9999 -EntryType Critical -Message "No events file found at $eventsJsonFile." 
+    exit 1
+}
 
 # parse out the event logs (Application, System, etc) we need to scan containing the events we care about 
 $eventLogs = $desiredLogs | Get-Member | Where-Object -Property "MemberType" -eq "NoteProperty" | foreach { $_.Name }
@@ -87,14 +96,15 @@ foreach ($log in $eventLogs) {
     foreach ($source in $eventSources) {
 
         $eventsOfInterest = [System.Collections.ArrayList]@()
-        $events = Get-EventLog -LogName $log -After $lastUniversalDateTime -Before $nowUniversalDateTime -Source $source
-        if($events -ne $Null) {
 
-            # find events with Ids we care about in the current $log and $source
-            foreach ($id in $desiredLogs.$log.$source.Ids) { 
-                $events | Where-Object -Property EventId -eq $id | foreach { 
-                    $eventsOfInterest.Add($_) 
-                } 
+        $events = Get-EventLog -LogName $log -After $lastUniversalDateTime -Before $nowUniversalDateTime -Source $source | Where-Object { 
+            $desiredLogs.$log.$source.Ids -Contains $_.EventId 
+        }
+
+        if ($events -ne $Null) {
+
+            foreach ($evt in $events) { 
+                $eventsOfInterest.Add($_) 
             }
             
             Report-Events -EventCollection $eventsOfInterest -Source $source -Node $env:COMPUTERNAME
