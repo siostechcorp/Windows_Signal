@@ -3,19 +3,22 @@
         "DataKeeperSnapIn": {
             "ids": [
                     1,2,3
-            ]
+            ],
+            "lastReportTime": 18000
         },
         "ExtMirrSvc": {
             "ids": [
                 1,2,3
-            ]
+            ],
+            "lastReportTime": 18000
         }
     },
     "System": {
         "ExtMirr": {
             "ids": [
                 16,219,220
-            ]
+            ],
+            "lastReportTime": 18000
         }
     }
 }

@@ -7,14 +7,13 @@
 #
 # Examples:
 #     PS> Send-Signal 
-#     PS> Send-Signal -Pyscript ".\report_event.py" -TimeStampFile ".\UniversalTimeStamp.log" -EventsJsonFile ".\events.json" 
+#     PS> Send-Signal -Pyscript ".\report_event.py" -EventsJsonFile ".\events.json" 
 #
 #######################################################################################################################
 
 [CmdletBinding()]
 Param(    
     [String] $pyscript       = ".\report_event.py",
-    [String] $timeStampFile  = ".\UniversalTimeStamp.log",
     [String] $eventsJsonFile = ".\events.json"
 )
 
@@ -65,23 +64,18 @@ function Report-Events {
 }
 
 ### ENTRY POINT #######################################################################################################
-$lastUnixTime = 18000 # 1/1/1970 UTC time in case the $timeStampFile is missing
-
-# parse the last epoch time this script succeeded from file as a signed long, then create DateTime object from it 
-if(Test-Path -Path $timeStampFile) {
-    $lastUnixTime = [convert]::ToInt64((Get-Content -Path $timeStampFile), 10)
-}
-$lastUniversalDateTime = (([datetime]'1/1/1970').AddSeconds($lastUnixTime)).ToLocalTime()
 
 # parse the current epoch time as a signed long, then create DateTime object from it
 $nowUnixTime = [long] (Get-Date -Date ((Get-Date).ToUniversalTime()) -UFormat %s)
 $nowUniversalDateTime = (([datetime]'1/1/1970').AddSeconds($nowUnixTime)).ToLocalTime()
+Write-Verbose "time now is $nowUniversalDateTime"
 
 # parse the events json file into a PSCustomObject hashtable
 if(Test-Path -Path $eventsJsonFile) {
     $desiredLogs = Get-Content -Raw -Path $eventsJsonFile | ConvertFrom-Json
 } else {
-    Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9000 -EntryType Critical -Message "No events file found at $eventsJsonFile." 
+    Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9000 -EntryType Critical -Message "No events file found at $eventsJsonFile."
+    Write-Verbose "No events file found at $eventsJsonFile."
     exit 1
 }
 
@@ -89,7 +83,8 @@ if(Test-Path -Path $eventsJsonFile) {
 if ($desiredLogs -ne $Null) {
     $eventLogs = $desiredLogs | Get-Member | Where-Object -Property "MemberType" -eq "NoteProperty" | foreach { $_.Name }
 } else {
-    Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9001 -EntryType Critical -Message "Failed to parse events file found at $eventsJsonFile. Either no events of interest have been configured or the file is corrupt." 
+    Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9001 -EntryType Critical -Message "Failed to parse events file found at $eventsJsonFile. Either no events of interest have been configured or the file is corrupt."
+    Write-Verbose "Failed to parse events file found at $eventsJsonFile. Either no events of interest have been configured or the file is corrupt."
     exit 1
 }
 
@@ -100,27 +95,40 @@ foreach ($log in $eventLogs) {
     
     foreach ($source in $eventSources) {
 
-        $eventsOfInterest = [System.Collections.ArrayList]@()
+        Write-Verbose "Looking for events from $log and $source..."
+
+        # parse the last epoch time this script succeeded then create DateTime object from it 
+        $lastUnixTime = [long]$desiredLogs.$log.$source.lastReportTime
+        if ($lastUnixTime -eq 0) {
+            $lastUnixTime = 18000 # 1/1/1970 UTC time in case the lastReportTime value is missing (or set to 0) for this log and source
+        }
+        $lastUniversalDateTime = (([datetime]'1/1/1970').AddSeconds($lastUnixTime)).ToLocalTime()
+        Write-Verbose "last successful run was performed at $lastUniversalDateTime"        
 
         $events = Get-EventLog -LogName $log -After $lastUniversalDateTime -Before $nowUniversalDateTime -Source $source | Where-Object { 
             $desiredLogs.$log.$source.Ids -Contains $_.EventId 
         }
 
-        if ($events -ne $Null) {
+        if ($?) {
+            if (($desiredLogs.$log.$source | Get-Member -MemberType NoteProperty).Name -Contains "lastReportTime") {
+                $desiredLogs.$log.$source.lastReportTime = $nowUnixTime
+            } else {
+                $desiredLogs.$log.$source | Add-Member -NotePropertyName lastReportTime -NotePropertyValue $nowUnixTime
+            }
+        }
 
+        $eventsOfInterest = [System.Collections.ArrayList]@()
+        
+        if ($events -ne $Null) {
+            $evt
             foreach ($evt in $events) { 
                 $eventsOfInterest.Add($_) 
             }
             
             Report-Events -EventCollection $eventsOfInterest -Source $source -Node $env:COMPUTERNAME
-
-            # TODO: put timestamp on SUCCESS per log here
         }
     }
 }
 
-# overwrite the timestamp file with the time we started running this script, but only if the previous operations succeeded
-# TODO: make this timestamp method work on a per log basis
-if( $? ) {
-    $nowUnixTime > $timeStampFile
-}
+# overwrite the events file to update the timestamps with the time we started running this script
+$desiredLogs | ConvertTo-Json > $eventsJsonFile
