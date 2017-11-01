@@ -59,6 +59,8 @@ function Report-Events {
                 $evt.Message,
                 ($evt.TimeGenerated.ToString("yyyy-MM-ddTHH:mm:ss") + $tzinfo)
             )
+
+            return $?
         }
     }
 }
@@ -106,29 +108,27 @@ foreach ($log in $eventLogs) {
         Write-Verbose "last successful run was performed at $lastUniversalDateTime"        
 
         $events = Get-EventLog -LogName $log -After $lastUniversalDateTime -Before $nowUniversalDateTime -Source $source | Where-Object { 
-            $desiredLogs.$log.$source.Ids -Contains $_.EventId 
-        }
-
-        if ($?) {
-            if (($desiredLogs.$log.$source | Get-Member -MemberType NoteProperty).Name -Contains "lastReportTime") {
-                $desiredLogs.$log.$source.lastReportTime = $nowUnixTime
-            } else {
-                $desiredLogs.$log.$source | Add-Member -NotePropertyName lastReportTime -NotePropertyValue $nowUnixTime
-            }
+            $desiredLogs.$log.$source.ids -Contains $_.EventId 
         }
 
         $eventsOfInterest = [System.Collections.ArrayList]@()
-        
         if ($events -ne $Null) {
-            $evt
             foreach ($evt in $events) { 
                 $eventsOfInterest.Add($_) 
             }
             
             Report-Events -EventCollection $eventsOfInterest -Source $source -Node $env:COMPUTERNAME
+
+            if ($?) {
+                if (($desiredLogs.$log.$source | Get-Member -MemberType NoteProperty).Name -Contains "lastReportTime") {
+                    $desiredLogs.$log.$source.lastReportTime = $nowUnixTime
+                } else {
+                    $desiredLogs.$log.$source | Add-Member -NotePropertyName lastReportTime -NotePropertyValue $nowUnixTime
+                }
+            }
         }
     }
 }
 
-# overwrite the events file to update the timestamps with the time we started running this script
-$desiredLogs | ConvertTo-Json > $eventsJsonFile
+# overwrite the events file to update the successful timestamps with the time we started running this script
+$desiredLogs | ConvertTo-Json -Depth 3 > $eventsJsonFile
