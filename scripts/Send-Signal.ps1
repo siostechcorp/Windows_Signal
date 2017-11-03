@@ -103,6 +103,8 @@ foreach ($log in $eventLogs) {
         $lastUnixTime = [long]$desiredLogs.$log.$source.lastReportTime
         if ($lastUnixTime -eq 0) {
             $lastUnixTime = 18000 # 1/1/1970 UTC time in case the lastReportTime value is missing (or set to 0) for this log and source
+        } else {
+            $lastUnixTime -= 1;   # so we catch the missing second from the last time we ran Get-EventLog
         }
         $lastUniversalDateTime = (([datetime]'1/1/1970').AddSeconds($lastUnixTime)).ToLocalTime()
         Write-Verbose "last successful run was performed at $lastUniversalDateTime"        
