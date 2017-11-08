@@ -21,13 +21,12 @@ function Report-Events {
     [CmdletBinding()]
     Param(
         [Object[]] $EventCollection,
-        [String] $Source,
-        [String] $Node
+        [String] $Source
     )
 
     foreach ( $evt in $EventCollection ) {
         # only report events from node running this script
-        if ( $evt.MachineName -like "$Node" ) {
+        if ( ($evt.MachineName -like "$env:COMPUTERNAME") -Or ($evt.MachineName -like "$env:COMPUTERNAME.$env:USERDNSDOMAIN") ) {
             $evtSeverity = $null
             switch($evt.CategoryNumber) {
                 1 { $evtSeverity = "Info" }
@@ -115,7 +114,7 @@ foreach ($log in $eventLogs) {
 
         if ($events -ne $Null) {
             
-            Report-Events -EventCollection $events -Source $source -Node $env:COMPUTERNAME
+            Report-Events -EventCollection $events -Source $source
 
             if ($?) {
                 if (($desiredLogs.$log.$source | Get-Member -MemberType NoteProperty).Name -Contains "lastReportTime") {
