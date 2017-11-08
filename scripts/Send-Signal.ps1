@@ -101,7 +101,7 @@ foreach ($log in $eventLogs) {
         # parse the last epoch time this script succeeded then create DateTime object from it 
         $lastUnixTime = [long]$desiredLogs.$log.$source.lastReportTime
         if ($lastUnixTime -eq 0) {
-            $lastUnixTime = 18000 # 1/1/1970 UTC time in case the lastReportTime value is missing (or set to 0) for this log and source
+            $lastUnixTime = $nowUnixTime - 301 # if no time was recorded for last successful run, then just get last five minutes.
         } else {
             $lastUnixTime -= 1;   # so we catch the missing second from the last time we ran Get-EventLog
         }
