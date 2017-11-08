@@ -20,7 +20,7 @@ Param(
 function Report-Events {
     [CmdletBinding()]
     Param(
-        [System.Collections.ArrayList] $EventCollection,
+        [Object[]] $EventCollection,
         [String] $Source,
         [String] $Node
     )
@@ -113,13 +113,9 @@ foreach ($log in $eventLogs) {
             $desiredLogs.$log.$source.ids -Contains $_.EventId 
         }
 
-        $eventsOfInterest = [System.Collections.ArrayList]@()
         if ($events -ne $Null) {
-            foreach ($evt in $events) { 
-                $eventsOfInterest.Add($_) 
-            }
             
-            Report-Events -EventCollection $eventsOfInterest -Source $source -Node $env:COMPUTERNAME
+            Report-Events -EventCollection $events -Source $source -Node $env:COMPUTERNAME
 
             if ($?) {
                 if (($desiredLogs.$log.$source | Get-Member -MemberType NoteProperty).Name -Contains "lastReportTime") {
