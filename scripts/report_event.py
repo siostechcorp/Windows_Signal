@@ -28,8 +28,8 @@ from SignaliQ.model.NetworkInterface import NetworkInterface
 
 __log__ = logging.getLogger(__name__)
 
-env_id = 180005401 # CHANGE THIS TO LOCAL iQ ENVIRONMENT ID
-vm_hwid = "00:50:56:9B:7C:76" # CHANGE THIS TO A LOCAL VM MAC ADDRESS, MUST USE ':' NOT '-' FOR NOW
+env_id = 180005401            # CHANGE THIS TO LOCAL iQ ENVIRONMENT ID
+vm_hwid = "00-50-56-9B-7C-76" # CHANGE THIS TO A LOCAL VM MAC ADDRESS
 
 def main(args):
     # Setup the client and send the data!
