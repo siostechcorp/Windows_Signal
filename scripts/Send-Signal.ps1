@@ -1,67 +1,131 @@
 #######################################################################################################################
 # Send-Signal.ps1
 # 
-# Parse System event log for specifc log and source. Can be configured to run on a schedule via Task Scheduler, but
-# this reuires Python27 to be in the PATH environment variable.
+# Parse System event log for specifc log, sources, and ids defined in $eventsJsonFile. Should be configured to run on a 
+# schedule via Task Scheduler. 
+# Requires Python27 to be in the PATH environment variable.
 #
 # Examples:
-#     PS> Send-Signal "System" "ExtMirr" 5
-#     PS> Send-Signal -EventLog "System" -EventSource "ExtMirr" -MinutesPrevious 5
+#     PS> Send-Signal 
+#     PS> Send-Signal -Pyscript ".\report_event.py" -EventsJsonFile ".\events.json" 
 #
 #######################################################################################################################
 
 [CmdletBinding()]
-Param(
-    [Parameter(Mandatory=$True, Position=0)]
-    [string] $EventLog = "System",
-
-    [Parameter(Mandatory=$True, Position=1)]
-    [string] $EventSource = "ExtMirr",
-
-    [Parameter(Mandatory=$False, Position=2)]
-    [int] $MinutesPrevious = 5
+Param(    
+    [String] $pyscript       = ".\report_event.py",
+    [String] $eventsJsonFile = ".\events.json"
 )
 
-$pyscript = ".\report_event.py"
-$node = $env:COMPUTERNAME
+function Report-Events {
+    [CmdletBinding()]
+    Param(
+        [Object[]] $EventCollection,
+        [String] $Source
+    )
 
-$xMinutesAgo = (Get-Date).Subtract((New-TimeSpan -Minutes $MinutesPrevious))
+    foreach ( $evt in $EventCollection ) {
+        # only report events from node running this script
+        if ( ($evt.MachineName -like "$env:COMPUTERNAME") -Or ($evt.MachineName -like "$env:COMPUTERNAME.$env:USERDNSDOMAIN") ) {
+            $evtSeverity = $null
+            switch($evt.CategoryNumber) {
+                1 { $evtSeverity = "Info" }
+                2 { $evtSeverity = "Warning" }
+                3 { $evtSeverity = "Critical" }
+                default { $evtSeverity = "Info" }
+            }
+            
+            $tz = Get-TimeZone
+            $tzinfo = $tz.BaseUtcOffset.Hours.ToString("00") + [Math]::abs($tz.BaseUtcOffset.Minutes).ToString("00")
 
-$events = Get-EventLog -LogName $EventLog -After $xMinutesAgo -Source $EventSource
+            Write-Verbose ("Sending the following event details to the python script:`n" + $Source + "`n" + $evt.EventID + "`n" + $evtSeverity + "`n" + $evt.Message + "`n" + ($evt.TimeGenerated.ToString("yyyy-MM-ddTHH:mm:ss") + $tzinfo))
 
-foreach ( $evt in $events ) {
-    # only report events from node running this script
-    if ( $evt.MachineName -like "$node*" ) {
-        $evtSeverity = $null
-        switch($evt.CategoryNumber) {
-            1 { $evtSeverity = "Info" }
-            2 { $evtSeverity = "Warning" }
-            3 { $evtSeverity = "Critical" }
-            default { $evtSeverity = "Info" }
+            Invoke-Command -ScriptBlock { 
+                Param(
+                    [string] $a1, 
+                    [string] $a2, 
+                    [string] $a3, 
+                    [string] $a4, 
+                    [string] $a5
+                ) 
+
+                &'python' $pyscript $a1 $a2 $a3 $a4 $a5 
+
+            } -ArgumentList @(
+                $Source,
+                $evt.EventID,
+                $evtSeverity,
+                $evt.Message,
+                ($evt.TimeGenerated.ToString("yyyy-MM-ddTHH:mm:ss") + $tzinfo)
+            )
+
+            return $?
         }
-        
-        $tz = Get-TimeZone
-        $tzinfo = $tz.BaseUtcOffset.Hours.ToString("00") + [Math]::abs($tz.BaseUtcOffset.Minutes).ToString("00")
-
-        Write-Verbose ("Sending the following event details to the python script:`n" + $EventSource + "`n" + $evt.EventID + "`n" + $evtSeverity + "`n" + $evt.Message + "`n" + ($evt.TimeGenerated.ToString("yyyy-MM-ddTHH:mm:ss") + $tzinfo))
-
-        Invoke-Command -ScriptBlock { 
-            Param(
-                [string] $a1, 
-                [string] $a2, 
-                [string] $a3, 
-                [string] $a4, 
-                [string] $a5
-            ) 
-
-            &'python' $pyscript $a1 $a2 $a3 $a4 $a5 
-
-        } -ArgumentList @(
-            $EventSource,
-            $evt.EventID,
-            $evtSeverity,
-            $evt.Message,
-            ($evt.TimeGenerated.ToString("yyyy-MM-ddTHH:mm:ss") + $tzinfo)
-        )
     }
 }
+
+### ENTRY POINT #######################################################################################################
+
+# parse the current epoch time as a signed long, then create DateTime object from it
+$nowUnixTime = [long] (Get-Date -Date ((Get-Date).ToUniversalTime()) -UFormat %s)
+$nowUniversalDateTime = (([datetime]'1/1/1970').AddSeconds($nowUnixTime)).ToLocalTime()
+Write-Verbose "time now is $nowUniversalDateTime"
+
+# parse the events json file into a PSCustomObject hashtable
+if(Test-Path -Path $eventsJsonFile) {
+    $desiredLogs = Get-Content -Raw -Path $eventsJsonFile | ConvertFrom-Json
+} else {
+    Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9000 -EntryType Critical -Message "No events file found at $eventsJsonFile."
+    Write-Verbose "No events file found at $eventsJsonFile."
+    exit 1
+}
+
+# parse out the event logs (Application, System, etc) we need to scan containing the events we care about 
+if ($desiredLogs -ne $Null) {
+    $eventLogs = $desiredLogs | Get-Member | Where-Object -Property "MemberType" -eq "NoteProperty" | foreach { $_.Name }
+} else {
+    Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9001 -EntryType Critical -Message "Failed to parse events file found at $eventsJsonFile. Either no events of interest have been configured or the file is corrupt."
+    Write-Verbose "Failed to parse events file found at $eventsJsonFile. Either no events of interest have been configured or the file is corrupt."
+    exit 1
+}
+
+foreach ($log in $eventLogs) {
+    
+    # parse out the sources that issue the events we care about so that we can query the target log for just those sources    
+    $eventSources = $desiredLogs.$log | Get-Member | Where-Object -Property "MemberType" -eq "NoteProperty" | foreach { $_.Name }
+    
+    foreach ($source in $eventSources) {
+
+        Write-Verbose "Looking for events from $log and $source..."
+
+        # parse the last epoch time this script succeeded then create DateTime object from it 
+        $lastUnixTime = [long]$desiredLogs.$log.$source.lastReportTime
+        if ($lastUnixTime -eq 0) {
+            $lastUnixTime = $nowUnixTime - 301 # if no time was recorded for last successful run, then just get last five minutes.
+        } else {
+            $lastUnixTime -= 1;   # so we catch the missing second from the last time we ran Get-EventLog
+        }
+        $lastUniversalDateTime = (([datetime]'1/1/1970').AddSeconds($lastUnixTime)).ToLocalTime()
+        Write-Verbose "last successful run was performed at $lastUniversalDateTime"        
+
+        $events = Get-EventLog -LogName $log -After $lastUniversalDateTime -Before $nowUniversalDateTime -Source $source | Where-Object { 
+            $desiredLogs.$log.$source.ids -Contains $_.EventId 
+        }
+
+        if ($events -ne $Null) {
+            
+            Report-Events -EventCollection $events -Source $source
+
+            if ($?) {
+                if (($desiredLogs.$log.$source | Get-Member -MemberType NoteProperty).Name -Contains "lastReportTime") {
+                    $desiredLogs.$log.$source.lastReportTime = $nowUnixTime
+                } else {
+                    $desiredLogs.$log.$source | Add-Member -NotePropertyName lastReportTime -NotePropertyValue $nowUnixTime
+                }
+            }
+        }
+    }
+}
+
+# overwrite the events file to update the successful timestamps with the time we started running this script
+$desiredLogs | ConvertTo-Json -Depth 3 > $eventsJsonFile

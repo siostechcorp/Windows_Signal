@@ -23,49 +23,60 @@ sys.path.insert(0, '{}/../../'.format(curr_path))
 from SignaliQ.client import Client
 from SignaliQ.model.CloudProviderEvent import CloudProviderEvent
 from SignaliQ.model.ProviderEventsUpdateMessage import ProviderEventsUpdateMessage
+from SignaliQ.model.CloudVM import CloudVM
+from SignaliQ.model.NetworkInterface import NetworkInterface
 
 __log__ = logging.getLogger(__name__)
 
-env_id = 180005401 # CHANGE THIS TO LOCAL iQ ENVIRONMENT ID
-vm_uuid = "421be947-4e42-3deb-e0e9-55ef78c3e16a" # CHANGE THIS TO LOCAL VM UUID
+env_id  = 123456789           # CHANGE THIS TO LOCAL iQ ENVIRONMENT ID
+vm_hwid = "00-00-00-00-00-00" # CHANGE THIS TO A LOCAL VM MAC ADDRESS
 
 def main(args):
     # Setup the client and send the data!
     client = Client()
     client.connect()
-    
+
     __log__.info( "Creating event with time {} and env id of {}".format(args[5], env_id) )
 
-    # create message with <Source>, <ID>, and <Message> delimited by the unicode unit separator
-    event_desc = args[1] + unichr(31) + args[2] + unichr(31) + args[4]
+    # create message with <ID> and <Message> delimited by the unicode unit separator
+    event_desc = args[2] + unichr(31) + args[4]
 
     events = [
         CloudProviderEvent(
             description = event_desc,
             environment_id = env_id,
             layer = "Compute",
+            source = args[1],
             severity = args[3],
             time = args[5],
-            event_type = "Performance",
-            vm_uuids = [vm_uuid],
+            event_type = "SDK Event",
+            vms = [
+                CloudVM(network_interfaces = [NetworkInterface(hw_address = vm_hwid)])
+            ],
         ),
         CloudProviderEvent(
             description = event_desc,
             environment_id = env_id,
             layer = "Network",
+            source = args[1],
             severity = args[3],
             time = args[5],
-            event_type = "Performance",
-            vm_uuids = [vm_uuid],
+            event_type = "SDK Event",
+            vms = [
+                CloudVM(network_interfaces = [NetworkInterface(hw_address = vm_hwid)])
+            ],
         ),
         CloudProviderEvent(
             description = event_desc,
             environment_id = env_id,
             layer = "Storage",
+            source = args[1],
             severity = args[3],
             time = args[5],
-            event_type = "Performance",
-            vm_uuids = [vm_uuid],
+            event_type = "SDK Event",
+            vms = [
+                CloudVM(network_interfaces = [NetworkInterface(hw_address = vm_hwid)])
+            ],
         )
     ]
 

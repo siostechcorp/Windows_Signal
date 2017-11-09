@@ -21,8 +21,8 @@ The arguments field on the New Action panel should be given the following:
 
 Also, the polling interval should match the value used in the "Repeat task every" field in the New Trigger dialog.  
 
-![Create Task Dialog](/../screenshots/WindowsSignalTask01.png?raw=true "Create Task")
+![Create Task Dialog](/screenshots/WindowsSignalTask01.png?raw=true "Create Task")
 
-![New Trigger Dialog](/../screenshots/WindowsSignalTask02.png?raw=true "New Trigger")
+![New Trigger Dialog](/screenshots/WindowsSignalTask02.png?raw=true "New Trigger")
 
-![New Action Dialog](/../screenshots/WindowsSignalTask03.png?raw=true "New Action")
+![New Action Dialog](/screenshots/WindowsSignalTask03.png?raw=true "New Action")
