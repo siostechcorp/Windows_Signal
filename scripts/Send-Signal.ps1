@@ -1,20 +1,20 @@
 #######################################################################################################################
 # Send-Signal.ps1
 # 
-# Parse System event log for specifc log, sources, and ids defined in $eventsJsonFile. Should be configured to run on a 
-# schedule via Task Scheduler. 
+# Parse System event log for specifc log, sources, and ids defined in the json files located at the $eventsJsonFilePath. 
+# Should be configured to run on a schedule via Task Scheduler. 
 # Requires Python27 to be in the PATH environment variable.
 #
 # Examples:
 #     PS> Send-Signal 
-#     PS> Send-Signal -Pyscript ".\report_event.py" -EventsJsonFile ".\events.json" 
+#     PS> Send-Signal -Pyscript ".\report_event.py" -eventsJsonFilePath ".\" 
 #
 #######################################################################################################################
 
 [CmdletBinding()]
 Param(    
     [String] $pyscript       = ".\report_event.py",
-    [String] $eventsJsonFile = ".\events.json"
+    [String] $eventsJsonFilePath = ".\"
 )
 
 function Report-Events {
@@ -23,6 +23,10 @@ function Report-Events {
         [Object[]] $EventCollection,
         [String] $Source
     )
+
+    if($EventCollection -eq $Null) {
+        return 0
+    }
 
     foreach ( $evt in $EventCollection ) {
         # only report events from node running this script
@@ -72,60 +76,66 @@ $nowUniversalDateTime = (([datetime]'1/1/1970').AddSeconds($nowUnixTime)).ToLoca
 Write-Verbose "time now is $nowUniversalDateTime"
 
 # parse the events json file into a PSCustomObject hashtable
-if(Test-Path -Path $eventsJsonFile) {
-    $desiredLogs = Get-Content -Raw -Path $eventsJsonFile | ConvertFrom-Json
-} else {
-    Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9000 -EntryType Critical -Message "No events file found at $eventsJsonFile."
-    Write-Verbose "No events file found at $eventsJsonFile."
-    exit 1
-}
+if(Test-Path -Path $eventsJsonFilePath) {
+    $jsonFiles = Get-ChildItem -Path $eventsJsonFilePath -Filter "*.json"
+    foreach ($file in $jsonFiles) {
+        $desiredLogs = Get-Content -Raw -Path $file.FullName | ConvertFrom-Json
 
-# parse out the event logs (Application, System, etc) we need to scan containing the events we care about 
-if ($desiredLogs -ne $Null) {
-    $eventLogs = $desiredLogs | Get-Member | Where-Object -Property "MemberType" -eq "NoteProperty" | foreach { $_.Name }
-} else {
-    Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9001 -EntryType Critical -Message "Failed to parse events file found at $eventsJsonFile. Either no events of interest have been configured or the file is corrupt."
-    Write-Verbose "Failed to parse events file found at $eventsJsonFile. Either no events of interest have been configured or the file is corrupt."
-    exit 1
-}
-
-foreach ($log in $eventLogs) {
-    
-    # parse out the sources that issue the events we care about so that we can query the target log for just those sources    
-    $eventSources = $desiredLogs.$log | Get-Member | Where-Object -Property "MemberType" -eq "NoteProperty" | foreach { $_.Name }
-    
-    foreach ($source in $eventSources) {
-
-        Write-Verbose "Looking for events from $log and $source..."
-
-        # parse the last epoch time this script succeeded then create DateTime object from it 
-        $lastUnixTime = [long]$desiredLogs.$log.$source.lastReportTime
-        if ($lastUnixTime -eq 0) {
-            $lastUnixTime = $nowUnixTime - 301 # if no time was recorded for last successful run, then just get last five minutes.
+        # parse out the event logs (Application, System, etc) we need to scan containing the events we care about 
+        if ($desiredLogs -ne $Null) {
+            $eventLogs = $desiredLogs | Get-Member | Where-Object -Property "MemberType" -eq "NoteProperty" | foreach { $_.Name }
         } else {
-            $lastUnixTime -= 1;   # so we catch the missing second from the last time we ran Get-EventLog
-        }
-        $lastUniversalDateTime = (([datetime]'1/1/1970').AddSeconds($lastUnixTime)).ToLocalTime()
-        Write-Verbose "last successful run was performed at $lastUniversalDateTime"        
-
-        $events = Get-EventLog -LogName $log -After $lastUniversalDateTime -Before $nowUniversalDateTime -Source $source | Where-Object { 
-            $desiredLogs.$log.$source.ids -Contains $_.EventId 
+            Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9001 -EntryType Critical -Message "Failed to parse events file found at $eventsJsonFilePath. Either no events of interest have been configured or the file is corrupt."
+            Write-Verbose "Failed to parse events file found at $eventsJsonFilePath. Either no events of interest have been configured or the file is corrupt."
+            exit 1
         }
 
-        if ($events -ne $Null) {
+        foreach ($log in $eventLogs) {
             
-            Report-Events -EventCollection $events -Source $source
+            # parse out the sources that issue the events we care about so that we can query the target log for just those sources    
+            $eventSources = $desiredLogs.$log | Get-Member | Where-Object -Property "MemberType" -eq "NoteProperty" | foreach { $_.Name }
+            
+            foreach ($source in $eventSources) {
 
-            if ($?) {
-                if (($desiredLogs.$log.$source | Get-Member -MemberType NoteProperty).Name -Contains "lastReportTime") {
-                    $desiredLogs.$log.$source.lastReportTime = $nowUnixTime
+                Write-Verbose "Looking for events from $log and $source..."
+
+                # parse the last epoch time this script succeeded then create DateTime object from it 
+                $lastUnixTime = [long]$desiredLogs.$log.$source.lastReportTime
+                Write-Verbose "lastUnixTime: $lastUnixTime"
+                if ($lastUnixTime -eq 0) {
+                    Write-Verbose "SETTING LAST UNIX TIME TO 5 MIN AGO"
+                    $lastUnixTime = $nowUnixTime - 301 # if no time was recorded for last successful run, then just get last five minutes.
                 } else {
-                    $desiredLogs.$log.$source | Add-Member -NotePropertyName lastReportTime -NotePropertyValue $nowUnixTime
+                    $lastUnixTime -= 1;   # so we catch the missing second from the last time we ran Get-EventLog
+                }
+                Write-Verbose "lastUnixTime: $lastUnixTime"
+                $lastUniversalDateTime = (([datetime]'1/1/1970').AddSeconds($lastUnixTime)).ToLocalTime()
+                Write-Verbose "last successful run was performed at $lastUniversalDateTime"        
+
+                $events = Get-EventLog -LogName $log -After $lastUniversalDateTime -Before $nowUniversalDateTime -Source $source | Where-Object { 
+                    $desiredLogs.$log.$source.ids -Contains $_.EventId 
+                }
+
+                Report-Events -EventCollection $events -Source $source
+
+                if ($?) {
+                    Write-Verbose "events found"
+                    if (($desiredLogs.$log.$source | Get-Member -MemberType NoteProperty).Name -Contains "lastReportTime") {
+                        Write-Verbose "updating timestamp for $source"
+                        $desiredLogs.$log.$source.lastReportTime = $nowUnixTime
+                    } else {
+                        Write-Verbose "adding lastReportTime member with value $nowUnixTime"
+                        $desiredLogs.$log.$source | Add-Member -NotePropertyName lastReportTime -NotePropertyValue $nowUnixTime
+                    }
                 }
             }
         }
-    }
-}
 
-# overwrite the events file to update the successful timestamps with the time we started running this script
-$desiredLogs | ConvertTo-Json -Depth 3 > $eventsJsonFile
+        # overwrite the events file to update the successful timestamps with the time we started running this script
+        $desiredLogs | ConvertTo-Json -Depth 4 > $file.FullName
+    }
+} else {
+    Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9000 -EntryType Critical -Message "No events file found at $eventsJsonFilePath."
+    Write-Verbose "No events file found at $eventsJsonFilePath."
+    exit 1
+}
