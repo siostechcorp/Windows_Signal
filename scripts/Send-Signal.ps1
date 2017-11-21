@@ -18,7 +18,7 @@ Param(
     [String] $eventsJsonFilePath = ".\"
 )
 
-function Report-Events {
+function Send-Events {
     [CmdletBinding()]
     Param(
         [Object[]] $EventCollection,
@@ -62,15 +62,11 @@ function Report-Events {
                     $evt_category = $FiltersPSCustomObject.($evt.EventID.ToString()).$filter[3]
                     
                     $evt_layers = [System.Collections.ArrayList]@()
-                    $evt_layers.Add($FiltersPSCustomObject.($evt.EventID.ToString()).$filter[4])
 
-                    # the last 2 layers are optional, and may not exist in the json file at all
-                    if(-Not $FiltersPSCustomObject.($evt.EventID.ToString()).$filter[5] -eq 0) {
-                        $evt_layers.Add($FiltersPSCustomObject.($evt.EventID.ToString()).$filter[5])
-
-                        if(-Not $FiltersPSCustomObject.($evt.EventID.ToString()).$filter[6] -eq 0) {
-                            $evt_layers.Add($FiltersPSCustomObject.($evt.EventID.ToString()).$filter[6])
-                        }
+                    $i = 4
+                    while(-Not $FiltersPSCustomObject.($evt.EventID.ToString()).$filter[$i] -eq 0) {
+                        $evt_layers.Add($FiltersPSCustomObject.($evt.EventID.ToString()).$filter[$i])
+                        $i++
                     }
                 }
             }
@@ -172,7 +168,7 @@ if(Test-Path -Path $eventsJsonFilePath) {
                 } 
                 
                 # Package and send these events to the iQ appliance if they match the events specified in this json file (passed in via -FilersPSCustomObject)
-                Report-Events -EventCollection $events -Source $source -FiltersPSCustomObject ($desiredLogs.$log.$source.ids)
+                Send-Events -EventCollection $events -Source $source -FiltersPSCustomObject ($desiredLogs.$log.$source.ids)
 
                 # update the timestamps for this $log,$source if Report-Events succeeded
                 if ($?) {
