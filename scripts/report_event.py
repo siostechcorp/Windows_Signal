@@ -11,6 +11,10 @@ Arguments:
   args[3] - Windows Event Severity
   args[4] - Windows Event Message
   args[5] - Windows Event Time Generated in ISO 8601 format (2017-10-11T15:18:33-0500)
+  args[6] - Custom Event Summary (from JSON file originally)
+  args[7] - Custom Event Type
+  args[8] - Custom Event Category
+  args[9] - Custom Event Layer
 """
 
 import logging
@@ -38,42 +42,19 @@ def main(args):
 
     __log__.info( "Creating event with time {} and env id of {}".format(args[5], env_id) )
 
-    # create message with <ID> and <Message> delimited by the unicode unit separator
-    event_desc = args[2] + unichr(31) + args[4]
+    # create message with <Summary>, <ID>, and <Message> delimited by the unicode unit separator
+    event_desc = args[6] + unichr(31) + args[2] + unichr(31) + args[4]
 
     events = [
         CloudProviderEvent(
-            description = event_desc,
             environment_id = env_id,
-            layer = "Compute",
-            source = args[1],
-            severity = args[3],
-            time = args[5],
-            event_type = "SDK Event",
-            vms = [
-                CloudVM(network_interfaces = [NetworkInterface(hw_address = vm_hwid)])
-            ],
-        ),
-        CloudProviderEvent(
-            description = event_desc,
-            environment_id = env_id,
-            layer = "Network",
-            source = args[1],
-            severity = args[3],
-            time = args[5],
-            event_type = "SDK Event",
-            vms = [
-                CloudVM(network_interfaces = [NetworkInterface(hw_address = vm_hwid)])
-            ],
-        ),
-        CloudProviderEvent(
-            description = event_desc,
-            environment_id = env_id,
-            layer = "Storage",
-            source = args[1],
-            severity = args[3],
-            time = args[5],
-            event_type = "SDK Event",
+            description    = event_desc,
+            source         = args[1],
+            severity       = args[3],
+            time           = args[5],
+            event_type     = args[7],
+            category       = args[8],
+            layer          = args[9],
             vms = [
                 CloudVM(network_interfaces = [NetworkInterface(hw_address = vm_hwid)])
             ],
