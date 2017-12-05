@@ -12,6 +12,8 @@ Window Signal consists of two parts: the scripts included in this repo, and loca
 
 The included PowerShell script should be edited with your iQ Environment id. This should have been obtained during the Signal iQ setup performed as a prerequisite, but it is also availble in the Properties page for your environment in the SIOS iQ web gui.
 
+The PowerShell script relies on a json file declaring which events are of interest and should be monitored. An example file (Windows.json) can be found in the json folder, and a sample file (Sample.json) with syntax descriptions is in the base folder. Additional events can be monitored by adding to the Windows.json file or by adding another file in the json folder containing the desired events using the same format as the existing files. The basic layout for the json structure is Log > Source > ID > FilterText. The FilterText can be used to narrow down a single event from multiple different events using the same (Log,Source,ID). Use a '.' in place of the FilterText to match any(all) events with the same (Log,Source,ID).
+
 To create a task in Windows Server first start the Task Scheduler (https://technet.microsoft.com/en-us/library/cc721931(v=ws.11).aspx)  
 
 Next schedule a task (https://technet.microsoft.com/en-us/library/cc748993(v=ws.11).aspx) similar to the images below.  
