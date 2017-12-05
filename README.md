@@ -10,19 +10,18 @@ This module depends on Python 2.7.14, and certain packages as outlined in the Si
 # Instructions
 Window Signal consists of two parts: the scripts included in this repo, and local system task configuration. A recurring task must be configured to run on some time interval. This task simply needs to call the included PowerShell script.
 
-The included python script should be edited with your iQ Environment id and the host server's Virtual Machine UUID. These should have been obtained during the Signal iQ setup performed as a prerequisite.  
+The included PowerShell script should be edited with your iQ Environment id. This should have been obtained during the Signal iQ setup performed as a prerequisite, but it is also availble in the Properties page for your environment in the SIOS iQ web gui.
+
+The PowerShell script relies on a json file declaring which events are of interest and should be monitored. An example file (Windows.json) can be found in the json folder, and a sample file (Sample.json) with syntax descriptions is in the base folder. Additional events can be monitored by adding to the Windows.json file or by adding another file in the json folder containing the desired events using the same format as the existing files. The basic layout for the json structure is Log > Source > ID > FilterText. The FilterText can be used to narrow down a single event from multiple different events using the same (Log,Source,ID). Use a '.' in place of the FilterText to match any(all) events with the same (Log,Source,ID).
 
 To create a task in Windows Server first start the Task Scheduler (https://technet.microsoft.com/en-us/library/cc721931(v=ws.11).aspx)  
 
 Next schedule a task (https://technet.microsoft.com/en-us/library/cc748993(v=ws.11).aspx) similar to the images below.  
 The arguments field on the New Action panel should be given the following:  
 
-"<path-to-Windows_Signal-repo>\scripts\Send-Signal.ps1" <Event Log> <Source> <polling interval in minutes>  
+"<path-to-Windows_Signal-repo>\scripts\Send-Signal.ps1"  
 
 Also, the polling interval should match the value used in the "Repeat task every" field in the New Trigger dialog.  
 
-![Create Task Dialog](/screenshots/WindowsSignalTask01.png?raw=true "Create Task")
-
-![New Trigger Dialog](/screenshots/WindowsSignalTask02.png?raw=true "New Trigger")
-
-![New Action Dialog](/screenshots/WindowsSignalTask03.png?raw=true "New Action")
+See the below video for a configuration walkthrough:
+[![Windows Signal Configuration](https://github.com/siostechcorp/Signal_iQ/raw/master/Windows_Signal_Config.webm)](Windows_Signal_Configuration)
