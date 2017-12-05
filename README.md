@@ -27,3 +27,6 @@ Click the link for a video configuration walkthrough:
 <video width="320" height="200" controls preload> 
     <source src="../master/Windows_Signal.webm"></source> 
 </video>
+
+[Windows Signal Configuration](../master/Windows_Signal.webm)
+
