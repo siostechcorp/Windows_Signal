@@ -2,20 +2,21 @@
 # Send-Signal.ps1
 # 
 # Parse System event log for specifc log, sources, and ids defined in the json files located at the 
-# $eventsJsonFilePath. Should be configured to run on a schedule via Task Scheduler. 
+# $EventsJsonFilePath. Should be configured to run on a schedule via Task Scheduler. 
 #
 # Requires Python27 to be in the PATH environment variable.
 #
 # Examples:
 #     PS> Send-Signal 
-#     PS> Send-Signal -Pyscript ".\report_event.py" -EventsJsonFilePath ".\" 
+#     PS> Send-Signal -PyModule ".\report_event.py" -EventsJsonFilePath ".\" 
 #
 #######################################################################################################################
 
 [CmdletBinding()]
 Param(    
-    [String] $pyscript       = ".\report_event.py",
-    [String] $eventsJsonFilePath = ".\"
+    [String] $PyModule       = ".\report_event.py",
+    [String] $EventsJsonFilePath = ".\json\",
+    [String] $EnvironmentID = "123456789"
 )
 
 function Send-Events {
@@ -23,7 +24,8 @@ function Send-Events {
     Param(
         [Object[]] $EventCollection,
         [String] $Source,
-        [PSCustomObject] $FiltersPSCustomObject
+        [PSCustomObject] $FiltersPSCustomObject,
+        [String] $MAC
     )
 
     if($EventCollection -eq $Null) {
@@ -81,7 +83,7 @@ function Send-Events {
             $tzinfo = $tz.BaseUtcOffset.Hours.ToString("00") + [Math]::abs($tz.BaseUtcOffset.Minutes).ToString("00")
 
             foreach ($layer in $evt_layers) {
-                Write-Verbose ("Sending the following event details to the python script:`n" + $Source + "`n" + $evt.EventID + "`n" + $evt_severity + "`n" + $evt.Message + "`n" + ($evt.TimeGenerated.ToString("yyyy-MM-ddTHH:mm:ss") + $tzinfo) + "`n" + $evt_summary + "`n" + $evt_type + "`n" + $evt_category + "`n" + $layer)
+                Write-Verbose ("Sending the following event details to the python script:`n" + $EnvironmentID + "`n" + $MAC + "`n" + $Source + "`n" + $evt.EventID + "`n" + $evt_severity + "`n" + $evt.Message + "`n" + ($evt.TimeGenerated.ToString("yyyy-MM-ddTHH:mm:ss") + $tzinfo) + "`n" + $evt_summary + "`n" + $evt_type + "`n" + $evt_category + "`n" + $layer)
 
                 Invoke-Command -ScriptBlock { 
                     Param(
@@ -93,12 +95,20 @@ function Send-Events {
                         [string] $a6,
                         [string] $a7,
                         [string] $a8,
-                        [string] $a9
+                        [string] $a9,
+                        [string] $a10,
+                        [string] $a11
+
                     ) 
-
-                    &'python' $pyscript $a1 $a2 $a3 $a4 $a5 $a6 $a7 $a8 $a9
-
+                    
+                    if($PyModule -Like "*.exe") {
+                        &$PyModule $a1 $a2 $a3 $a4 $a5 $a6 $a7 $a8 $a9 $a10 $a11
+                    } else  {
+                        &'python' $PyModule $a1 $a2 $a3 $a4 $a5 $a6 $a7 $a8 $a9 $a10 $a11
+                    }
                 } -ArgumentList @(
+                    $EnvironmentID,
+                    $MAC,
                     $Source,
                     $evt.EventID,
                     $evt_severity,
@@ -123,9 +133,24 @@ $nowUnixTime = [long] (Get-Date -Date ((Get-Date).ToUniversalTime()) -UFormat %s
 $nowUniversalDateTime = (([datetime]'1/1/1970').AddSeconds($nowUnixTime)).ToLocalTime()
 Write-Verbose "time now is $nowUniversalDateTime"
 
-if(Test-Path -Path $eventsJsonFilePath) {
+if(Test-Path -Path $EventsJsonFilePath) {
 
-    $jsonFiles = Get-ChildItem -Path $eventsJsonFilePath -Filter "*.json"
+    # find first valid, active, non-virtual MAC address
+    $gm = &'getmac'
+    $macAddress = ""
+    $match = $gm | Select-String -Pattern "([0-9A-Z]{2}-?){6}"
+    if(-Not ($match -eq $Null)) { 
+        $macAddress = $match.Matches[0].Value; 
+    }
+
+    # stop execution if no valid MAC address was found
+    if($macAddress.Equals("")) {
+        Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9002 -EntryType Critical -Message "Failed to find a valid IPv4 MAC Address."
+        Write-Verbose "Failed to find a valid MAC address. Exiting."
+        exit 1
+    }
+
+    $jsonFiles = Get-ChildItem -Path $EventsJsonFilePath -Filter "*.json"
     foreach ($file in $jsonFiles) {
 
         # parse the events json file(s) into a PSCustomObject
@@ -135,7 +160,7 @@ if(Test-Path -Path $eventsJsonFilePath) {
         if ($desiredLogs -ne $Null) {
             $eventLogs = $desiredLogs | Get-Member | Where-Object -Property "MemberType" -eq "NoteProperty" | foreach { $_.Name }
         } else {
-            Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9001 -EntryType Critical -Message "Failed to parse events file found at $eventsJsonFilePath. Either no events of interest have been configured or the file is corrupt."
+            Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9001 -EntryType Critical -Message "Failed to parse events file found at $EventsJsonFilePath. Either no events of interest have been configured or the file is corrupt."
             Write-Verbose "Failed to parse events file " + $file.FullName + ". Either no events of interest have been configured or the file is corrupt."
         }
 
@@ -168,7 +193,7 @@ if(Test-Path -Path $eventsJsonFilePath) {
                 } 
                 
                 # Package and send these events to the iQ appliance if they match the events specified in this json file (passed in via -FilersPSCustomObject)
-                Send-Events -EventCollection $events -Source $source -FiltersPSCustomObject ($desiredLogs.$log.$source.ids)
+                Send-Events -EventCollection $events -Source $source -FiltersPSCustomObject ($desiredLogs.$log.$source.ids) -MAC $macAddress
 
                 # update the timestamps for this $log,$source if Report-Events succeeded
                 if ($?) {
@@ -187,7 +212,7 @@ if(Test-Path -Path $eventsJsonFilePath) {
         $desiredLogs | ConvertTo-Json -Depth 5 > $file.FullName
     }
 } else { # fail this run as the path containing the events json file(s) is not reachable
-    Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9000 -EntryType Critical -Message "No events file found at $eventsJsonFilePath."
-    Write-Verbose "No events file found at $eventsJsonFilePath."
+    Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9000 -EntryType Critical -Message "No events file found at $EventsJsonFilePath."
+    Write-Verbose "No events file found at $EventsJsonFilePath."
     exit 1
 }
