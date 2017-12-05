@@ -79,7 +79,7 @@ function Send-Events {
                 Continue
             }
             
-            $tz = Get-TimeZone
+            $tz = [TimeZoneInfo]::Local
             $tzinfo = $tz.BaseUtcOffset.Hours.ToString("00") + [Math]::abs($tz.BaseUtcOffset.Minutes).ToString("00")
 
             foreach ($layer in $evt_layers) {
