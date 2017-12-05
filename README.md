@@ -23,10 +23,10 @@ The arguments field on the New Action panel should be given the following:
 
 Also, the polling interval should match the value used in the "Repeat task every" field in the New Trigger dialog.  
 
-Click the link for a video configuration walkthrough:
-<video width="320" height="200" controls preload> 
-    <source src="../master/Windows_Signal.webm"></source> 
-</video>
+Click the link (and then 'View Raw')for a video configuration walkthrough of Signal iQ on Windows Server 2016:
+
+[Signal iQ Configuration](../master/Signal_iQ.webm)
+
+Click the link (and then 'View Raw')for a video configuration walkthrough of Windows Signal:
 
 [Windows Signal Configuration](../master/Windows_Signal.webm)
-
