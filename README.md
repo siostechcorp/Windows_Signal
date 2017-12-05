@@ -24,4 +24,4 @@ The arguments field on the New Action panel should be given the following:
 Also, the polling interval should match the value used in the "Repeat task every" field in the New Trigger dialog.  
 
 Click the link for a video configuration walkthrough:
-[Windows Signal Configuration](../master/Windows_Signal_Config.webm)
+[Windows Signal Configuration](../master/Windows_Signal.webm)
