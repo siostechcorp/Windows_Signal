@@ -14,8 +14,8 @@
 
 [CmdletBinding()]
 Param(    
-    [String] $PyModule       = ".\report_event.py",
-    [String] $EventsJsonFilePath = ".\json\",
+    [String] $PyModule       = "..\report_event.py",
+    [String] $EventsJsonFilePath = ".\json",
     [String] $EnvironmentID = "123456789"
 )
 
@@ -30,11 +30,11 @@ function Send-Events {
 
     if($EventCollection -eq $Null) {
         Write-Verbose "eventcollection passed to Report-Events was null"
-        return 0   
+        return 0 >$Null   
     } 
     if($FiltersPSCustomObject -eq $Null) {
         Write-Verbose "no filters found in FiltersPSCustomObject"
-        return 1
+        return 1 >$Null
     }
 
     # Create a proper hashtable out of the PSCustomObject created from the ids json field down. The keys below 
@@ -67,7 +67,7 @@ function Send-Events {
 
                     $i = 4
                     while(-Not $FiltersPSCustomObject.($evt.EventID.ToString()).$filter[$i] -eq 0) {
-                        $evt_layers.Add($FiltersPSCustomObject.($evt.EventID.ToString()).$filter[$i])
+                        $evt_layers.Add($FiltersPSCustomObject.($evt.EventID.ToString()).$filter[$i]) >$Null
                         $i++
                     }
                 }
@@ -147,7 +147,7 @@ if(Test-Path -Path $EventsJsonFilePath) {
     if($macAddress.Equals("")) {
         Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9002 -EntryType Critical -Message "Failed to find a valid IPv4 MAC Address."
         Write-Verbose "Failed to find a valid MAC address. Exiting."
-        exit 1
+        return $false
     }
 
     $jsonFiles = Get-ChildItem -Path $EventsJsonFilePath -Filter "*.json"
@@ -214,5 +214,5 @@ if(Test-Path -Path $EventsJsonFilePath) {
 } else { # fail this run as the path containing the events json file(s) is not reachable
     Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9000 -EntryType Critical -Message "No events file found at $EventsJsonFilePath."
     Write-Verbose "No events file found at $EventsJsonFilePath."
-    exit 1
+    return $true
 }
