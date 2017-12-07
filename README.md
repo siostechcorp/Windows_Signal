@@ -26,7 +26,6 @@ Also, the polling interval should match the value used in the "Repeat task every
 The following PowerShell code will configure a Task after prompting for all the required inputs:
 
 ```
-
 # prompt user for important paths
 $psscriptpath = Read-Host "Enter the directory containing the Send-Signal.ps1 file"
 $pypath = Read-Host "Enter the directory containing the report_event.py file"
@@ -40,7 +39,6 @@ $username = $credential.UserName
 $password = $credential.GetNetworkCredential().Password
 
 # new scheduled task properties to run the ps script every 5 minutes after boot
-$path = "C:\Program Files (x86)\SIOS\DataKeeper_Signal"
 $action = New-ScheduledTaskAction -Execute "Powershell.exe" -Argument "'$psscriptpath\Send-Signal.ps1' -PyModule '$pypath\report_event.py' -EventsJsonFilePath '$jsonpath' -EnvironmentID $environmentID"
 $triggers = [System.Collections.ArrayList]@()
 # trigger repeats for 10 years because of differences between how PSv4 and later versions deal with TimeSpan.MaxValue
@@ -49,7 +47,6 @@ $triggers.Add((New-ScheduledTaskTrigger -AtStartup)) >$Null
 
 # create the new task and start it right now
 Register-ScheduledTask -Action $action -Trigger $triggers -TaskName "DataKeeper Signal" -Description "Scan for DataKeeper Signal events every 5 minutes; starts on boot." -RunLevel Highest -User $username -Password $password | Start-ScheduledTask
-
 ```
 
 Click the link (and then 'View Raw')for a video configuration walkthrough of Signal iQ on Windows Server 2016:
