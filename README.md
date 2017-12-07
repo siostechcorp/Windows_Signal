@@ -23,6 +23,15 @@ The arguments field on the New Action panel should be given the following:
 
 Also, the polling interval should match the value used in the "Repeat task every" field in the New Trigger dialog.  
 
+# Example Installation 
+Click the link (and then 'View Raw')for a video configuration walkthrough of Signal iQ on Windows Server 2016:
+
+[Signal iQ Configuration](../master/Signal_iQ.webm)
+
+Click the link (and then 'View Raw')for a video configuration walkthrough of Windows Signal:
+
+[Windows Signal Configuration](../master/Windows_Signal.webm)
+
 The following PowerShell code will configure a Task after prompting for all the required inputs:
 
 ```
@@ -49,10 +58,3 @@ $triggers.Add((New-ScheduledTaskTrigger -AtStartup)) >$Null
 Register-ScheduledTask -Action $action -Trigger $triggers -TaskName "DataKeeper Signal" -Description "Scan for DataKeeper Signal events every 5 minutes; starts on boot." -RunLevel Highest -User $username -Password $password | Start-ScheduledTask
 ```
 
-Click the link (and then 'View Raw')for a video configuration walkthrough of Signal iQ on Windows Server 2016:
-
-[Signal iQ Configuration](../master/Signal_iQ.webm)
-
-Click the link (and then 'View Raw')for a video configuration walkthrough of Windows Signal:
-
-[Windows Signal Configuration](../master/Windows_Signal.webm)
