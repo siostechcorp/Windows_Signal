@@ -24,9 +24,9 @@ The arguments field on the New Action panel should be given the following:
 Also, the polling interval should match the value used in the "Repeat task every" field in the New Trigger dialog.  
 
 # Example Installation 
-Click the link (and then 'View Raw')for a video configuration walkthrough of Signal iQ on Windows Server 2016:
+Below video provides walkthrough of Signal iQ configuration on Windows Server 2016:
 
-[Signal iQ Configuration](../master/Signal_iQ.webm)
+[![IMAGE ALT TEXT](https://i.ytimg.com/vi/aag-5UH-UNM/hqdefault.jpg)](https://youtu.be/aag-5UH-UNM "Signal iQ Configuration")
 
 Click the link (and then 'View Raw')for a video configuration walkthrough of Windows Signal:
 
