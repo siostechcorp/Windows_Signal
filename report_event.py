@@ -8,7 +8,7 @@ This script will send three iQ events (one for each layer type) for a single Win
 Arguments:
   args[1] - SIOS iQ environment id (format 123456789)
   args[2] - localhost MAC address (format 00-00-00-00-00-00)
-  args[3] - Windows Event Source/Provider 
+  args[3] - Windows Event Source/Provider
   args[4] - Windows Event ID
   args[5] - Windows Event Severity
   args[6] - Windows Event Message
@@ -22,7 +22,6 @@ Arguments:
 import logging
 import sys
 from os.path import dirname, realpath
-from os import getenv
 
 # add potential paths to the Signal_iQ repo, could just use an arg instead
 if getattr(sys, 'frozen', False):
@@ -42,12 +41,13 @@ from SignaliQ.model.NetworkInterface import NetworkInterface
 
 __log__ = logging.getLogger(__name__)
 
+
 def main(args):
     # Setup the client and send the data!
     client = Client()
     client.connect()
 
-    __log__.info( "Creating event with time {} and env id of {}".format(args[7], args[1]) )
+    __log__.info("Creating event with time {} and env id of {}".format(args[7], args[1]))
 
     # create message with <Summary>, <ID>, and <Message> delimited by the unicode unit separator
     event_desc = args[8] + unichr(31) + args[4] + unichr(31) + args[6]
