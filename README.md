@@ -32,7 +32,7 @@ How to install and configure Windows_Signal:
 Test configuration:
   1. Open Powershell
   2. Change directories to the Windows_Signal directory.
-  3. Run this command>> C:\[path to Windows_Signal directory]\Send-Signal.ps1 -PyModule "C:\[path to Signal_iQ directory]\python\test\scripts\report_event.py" -EventsJsonFilePath "C:\[path to Windows_Signal directory]\json" -EnvironmentID [envID]
+  3. Run this command>> `C:\[path to Windows_Signal directory]\Send-Signal.ps1 -PyModule "C:\[path to Signal_iQ directory]\python\test\scripts\report_event.py" -EventsJsonFilePath "C:\[path to Windows_Signal directory]\json" -EnvironmentID [envID]`
   4. For more detailed output, use the -Verbose flag at the end of the previous step.
        
 Create a scheduled task:
@@ -40,7 +40,7 @@ Create a scheduled task:
   2. Create task
   3. [General tab] Name- SIOS Signal; Security Options- Run whether user is logged on or not, Run with highest privileges
   4. [Triggers tab] New trigger- Begin the task As startup, New trigger- On a schedule, Daily; advanced settings, repeat task every 5 minutes for a duration of indefinitely.
-  5. [Actions tab] New action- Action, start a program; Program/script, Powershell.exe; Add arguments, C:\[path to Windows_Signal directory]\Send-Signal.ps1 -PyModule "C:\[path to Signal_iQ directory]\python\test\scripts\report_event.py" -EventsJsonFilePath "C:\[path to Windows_Signal directory]\json" -EnvironmentID [envID]
+  5. [Actions tab] New action- Action, start a program; Program/script, Powershell.exe; Add arguments, `C:\[path to Windows_Signal directory]\Send-Signal.ps1 -PyModule "C:\[path to Signal_iQ directory]\python\test\scripts\report_event.py" -EventsJsonFilePath "C:\[path to Windows_Signal directory]\json" -EnvironmentID [envID]`
   6. [Conditions tab] Enable Wake the computer to run this task
   7. [Settings tab] Enable Allow task to be run on demand; Disable Stop the task if it runs longer than
   8. Click OK on the task and enter administrator credentials.
