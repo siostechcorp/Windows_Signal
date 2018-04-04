@@ -80,7 +80,12 @@ function Send-Events {
             }
             
             $tz = [TimeZoneInfo]::Local
-            $tzinfo = $tz.BaseUtcOffset.Hours.ToString("00") + [Math]::abs($tz.BaseUtcOffset.Minutes).ToString("00")
+            $dst = $tz.IsDaylightSavingTime(0)
+            if($dst -match "False") {
+                $tzinfo = (($tz.BaseUtcOffset.Hours) + 1).ToString("00") + [Math]::abs($tz.BaseUtcOffset.Minutes).ToString("00")
+            } else  {
+                $tzinfo = $tz.BaseUtcOffset.Hours.ToString("00") + [Math]::abs($tz.BaseUtcOffset.Minutes).ToString("00")
+            }
 
             foreach ($layer in $evt_layers) {
                 Write-Verbose ("Sending the following event details to the python script:`n" + $EnvironmentID + "`n" + $MAC + "`n" + $Source + "`n" + $evt.EventID + "`n" + $evt_severity + "`n" + $evt.Message + "`n" + ($evt.TimeGenerated.ToString("yyyy-MM-ddTHH:mm:ss") + $tzinfo) + "`n" + $evt_summary + "`n" + $evt_type + "`n" + $evt_category + "`n" + $layer)
