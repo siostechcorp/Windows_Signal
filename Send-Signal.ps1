@@ -81,8 +81,9 @@ function Send-Events {
             
             $tz = [TimeZoneInfo]::Local
             $supportDst = $tz.SupportsDaylightSavingTime
-            $dst = $tz.IsDaylightSavingTime(0)
-            if($supportDst -match "True" -and $dst -match "False") {
+            $date = Get-Date
+            $dst = $date.IsDaylightSavingTime()
+            if($supportDst -match "True" -and $dst -match "True") {
                 $tzinfo = (($tz.BaseUtcOffset.Hours) + 1).ToString("00") + [Math]::abs($tz.BaseUtcOffset.Minutes).ToString("00")
             } else  {
                 $tzinfo = $tz.BaseUtcOffset.Hours.ToString("00") + [Math]::abs($tz.BaseUtcOffset.Minutes).ToString("00")
