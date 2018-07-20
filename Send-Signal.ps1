@@ -19,6 +19,12 @@ Param(
     [String] $EnvironmentID = "123456789"
 )
 
+# start logging
+$ErrorActionPreference="SilentlyContinue"
+Stop-Transcript | out-null
+$ErrorActionPreference = "Continue"
+Start-Transcript -Path "$env:temp\Send-Signal.log" -append
+
 function Send-Events {
     [CmdletBinding()]
     Param(
@@ -30,10 +36,14 @@ function Send-Events {
 
     if($EventCollection -eq $Null) {
         Write-Verbose "eventcollection passed to Report-Events was null"
-        return 0 >$Null   
+        # stop logging
+        Stop-Transcript
+        return 0 >$Null
     } 
     if($FiltersPSCustomObject -eq $Null) {
         Write-Verbose "no filters found in FiltersPSCustomObject"
+        # stop logging
+        Stop-Transcript
         return 1 >$Null
     }
 
@@ -122,7 +132,8 @@ function Send-Events {
             }
         }
     }
-
+    # stop logging
+    Stop-Transcript
     return 0
 }
 
@@ -147,6 +158,8 @@ if(Test-Path -Path $EventsJsonFilePath) {
     if($macAddress.Equals("")) {
         Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9002 -EntryType Critical -Message "Failed to find a valid IPv4 MAC Address."
         Write-Verbose "Failed to find a valid MAC address. Exiting."
+        # stop logging
+        Stop-Transcript
         return $false
     }
 
@@ -214,5 +227,7 @@ if(Test-Path -Path $EventsJsonFilePath) {
 } else { # fail this run as the path containing the events json file(s) is not reachable
     Write-EventLog -LogName "Application" -Source "Windows_Signal" -EventID 9000 -EntryType Critical -Message "No events file found at $EventsJsonFilePath."
     Write-Verbose "No events file found at $EventsJsonFilePath."
+    # stop logging
+    Stop-Transcript
     return $true
 }
